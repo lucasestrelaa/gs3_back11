@@ -12,7 +12,8 @@ class UserController extends Controller
     {
         $status = 0;
         $message = [];
-        $users = DB::table('users')->where('email', $request->login)->where('password', $request->password)->get();
+        $md5Password = md5($request->password);
+        $users = DB::table('users')->where('email', $request->login)->where('password', $md5Password)->get();
         //var_dump($users[0]->name);
         if (isset($users[0])) {
             $status = 200;
@@ -64,12 +65,14 @@ class UserController extends Controller
                 //$this->logout();
                 $status = 404;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Usuário não logado!'
                 ];
             } else {
                 $status = 200;
                 $message = [
-                    'status' => 'usuário logado',
+                    'status'  => $status,
+                    'message' => 'usuário logado',
                 ];
             }
 
@@ -84,12 +87,14 @@ class UserController extends Controller
         if (isset($personal_access_token[0])) {
             $status = 200;
             $message = [
-                'status' => 'usuário deslogado',
+                'status'  => $status,
+                'message' => 'usuário deslogado!',
             ];
             $personal_access_token = DB::table('personal_access_tokens')->where('token', $request->token)->delete();
         } else {
             $status = 404;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não encontrado!'
             ];
         }
@@ -107,17 +112,19 @@ class UserController extends Controller
                 $status = 200;
                 $message = ['status' => $status, 'dados' => []];
                 foreach ($users as $dado) {
-                    array_push($message['dados'], ['id' => $dado->id, 'nome' => $dado->name, 'email' => $dado->email, 'profile_id' => $dado->profile_id]);
+                    array_push($message['dados'], ['id' => $dado->id, 'name' => $dado->name, 'email' => $dado->email, 'profile_id' => $dado->profile_id]);
                 }
             } else {
                 $status = 404;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Perfis não encontrados!'
                 ];
             }
         } else {
             $status = 401;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não autorizado!',
                 'dados' => $request->profile_id. "===" .$profile[0]->id
             ];
@@ -126,7 +133,6 @@ class UserController extends Controller
 
         return response()->json($message, $status);
     }
-    
     public function getUser($token, $id)
     {
 
@@ -140,16 +146,21 @@ class UserController extends Controller
             $users = DB::table('users')->where('id', $id)->get();
             if (isset($users[0])) {
                 $status = 200;
-                $message = ['status' => $status, 'dados' => ['id' => $users[0]->id, 'nome' => $users[0]->name, 'email' => $users[0]->email, 'profile_id' => $users[0]->profile_id]];
+                $message = [
+                    'status' => $status, 
+                    'dados' => ['id' => $users[0]->id, 'name' => $users[0]->name, 'email' => $users[0]->email, 'profile_id' => $users[0]->profile_id]
+                ];
             } else {
                 $status = 404;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Perfil não encontrado!'
                 ];
             }
         } else {
             $status = 401;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não atenticado!',
             ];
         }
@@ -157,14 +168,14 @@ class UserController extends Controller
 
         return response()->json($message, $status);
     }
-
     public function insert(Request $request)
     {
         $status = 0;
         $message = [];
+        $md5Password = md5($request->password);
         //pegar todos os perfis e ver se é perfil admin
         $profile = DB::table('profiles')->where('name', 'administrador')->get();
-        if ($request->profile_id === $profile[0]->id) {
+        if ((int)$request->profile_id === $profile[0]->id) {
             $users = DB::table('users')->get();
             if (isset($users[0])) {
                 $status = 200;
@@ -179,7 +190,7 @@ class UserController extends Controller
                     $request->email,
                     $date,
                     2,
-                    $request->password,
+                    $md5Password,
                     $token,
                     $date,
                     $date
@@ -187,17 +198,20 @@ class UserController extends Controller
                 $insert = DB::insert($sql, $campos);
 
                 $message = [
-                    'status' => 'Usuário cadastrado',
+                    'status'  => $status,
+                    'message' => 'Usuário cadastrado',
                 ];
             } else {
                 $status = 400;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Usuário não cadastrado (faltam parâmetros)!'
                 ];
             }
         } else {
             $status = 401;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não autorizado!'
             ];
         }
@@ -210,47 +224,54 @@ class UserController extends Controller
         $status = 0;
         $message = [];
         $date = date('Y-m-d H:i:s');
-        $users = DB::table('users')->where('id', $request->user_id)->update(
+        $users = DB::table('users')->where('id', (int)$request->user_id)->update(
             array(
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => $request->password,
                 'updated_at' => $date
             )
         );
         if ($users == 1) {
             $status = 201;
-            $message = ['status' => $status, 'message' => 'Usuário atualizado!'];
+            $message = [
+                'status' => $status, 
+                'message' => 'Usuário atualizado!'
+            ];
         } else {
             $status = 404;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não atualizado!'
             ];
         }
         return response()->json($message, $status);
     }
-    public function delete(Request $request)
+    public function delete($profile_id, $id)
     {
         $status = 0;
         $message = [];
         $profile = DB::table('profiles')->where('name', 'administrador')->get();
-        if ($request->profile_id === $profile[0]->id) {
-            $users = DB::table('users')->where('id', $request->delete_user_id)->get();
+        if ((int)$profile_id === $profile[0]->id) {
+            $users = DB::table('users')->where('id', (int)$id)->get();
             if (isset($users[0])) {
-                $users = DB::table('users')->where('id', $request->delete_user_id)->delete();
+                $users = DB::table('users')->where('id', (int)$id)->delete();
                 if ($users == 1) {
                     $status = 200;
                     $message = [
-                        'status' => 'usuário removido',
+                        'status'  => $status,
+                        'message' => 'usuário removido!',
                     ];
                 } else {
+                    $status = 404;
                     $message = [
-                        'status' => 'Usuário não removido!',
+                        'status'  => $status,
+                        'message' => 'Usuário não removido!',
                     ];
                 }
             } else {
                 $status = 401;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Usuário não encontrado!'
                 ];
             }
@@ -262,7 +283,6 @@ class UserController extends Controller
         }
         return response()->json($message, $status);
     }
-
     public function updateProfileUser(Request $request)
     {
         $status = 0;
@@ -270,8 +290,8 @@ class UserController extends Controller
         $date = date('Y-m-d H:i:s');
         //pegar todos os perfis e ver se é perfil admin
         $profile = DB::table('profiles')->where('name', 'administrador')->get();
-        if ($request->profile_id === $profile[0]->id && $request->user_id) {
-            $users = DB::table('users')->where('id', $request->user_id)->update(
+        if ((int)$request->profile_id === $profile[0]->id && $request->user_id) {
+            $users = DB::table('users')->where('id', (int)$request->user_id)->update(
                 array(
                     'profile_id' => $request->profile_id_new,
                     'updated_at' => $date
@@ -279,16 +299,21 @@ class UserController extends Controller
             );
             if ($users == 1) {
                 $status = 201;
-                $message = ['status' => $status, 'message' => 'Usuário atualizado!'];
+                $message = [
+                    'status' => $status, 
+                    'message' => 'Usuário atualizado!'
+                ];
             } else {
                 $status = 404;
                 $message = [
+                    'status'  => $status,
                     'message' => 'Usuário não atualizado!'
                 ];
             }
         } else {
             $status = 401;
             $message = [
+                'status'  => $status,
                 'message' => 'Usuário não autorizado!'
             ];
         }
