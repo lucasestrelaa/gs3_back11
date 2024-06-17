@@ -63,7 +63,7 @@ class UserController extends Controller
             $date = date('Y-m-d H:i:s');
             if ($date > $personal_access_token) {
                 //$this->logout();
-                $status = 404;
+                $status = 401;
                 $message = [
                     'status'  => $status,
                     'message' => 'Usuário não logado!'
@@ -238,7 +238,7 @@ class UserController extends Controller
                 'message' => 'Usuário atualizado!'
             ];
         } else {
-            $status = 404;
+            $status = 400;
             $message = [
                 'status'  => $status,
                 'message' => 'Usuário não atualizado!'
@@ -262,14 +262,14 @@ class UserController extends Controller
                         'message' => 'usuário removido!',
                     ];
                 } else {
-                    $status = 404;
+                    $status = 400;
                     $message = [
                         'status'  => $status,
                         'message' => 'Usuário não removido!',
                     ];
                 }
             } else {
-                $status = 401;
+                $status = 404;
                 $message = [
                     'status'  => $status,
                     'message' => 'Usuário não encontrado!'
@@ -304,7 +304,7 @@ class UserController extends Controller
                     'message' => 'Usuário atualizado!'
                 ];
             } else {
-                $status = 404;
+                $status = 400;
                 $message = [
                     'status'  => $status,
                     'message' => 'Usuário não atualizado!'

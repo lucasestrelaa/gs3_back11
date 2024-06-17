@@ -58,7 +58,7 @@ class ProfileController extends Controller
         $profile = DB::table('profiles')->where('name', 'administrador')->get();
         if ((int)$request->profile_id === $profile[0]->id) {
             $profile = DB::table('profiles')->get();
-                $status = 200;
+                $status = 201;
                 $message = ['status' => $status, 'dados' => []];
                 $date = date('Y-m-d H:i:s');
 
